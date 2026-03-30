@@ -1,0 +1,6 @@
+{"type": "alpha", "name": "Alice", "score": 10}
+{"type": "alpha", "name": "Bob", "score": 20}
+{"type": "beta", "value": "hello", "active": true}
+{"type": "beta", "value": "world", "active": false}
+{"type": "gamma", "count": 3, "tags": ["a", "b"]}
+{"type": "gamma", "count": 7, "tags": ["c"]}

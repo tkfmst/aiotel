@@ -1,0 +1,5 @@
+{"type": "msg", "content": [{"type": "text", "text": "hello"}]}
+{"type": "msg", "content": [{"type": "thinking", "thinking": "hmm", "signature": "sig1"}]}
+{"type": "msg", "content": [{"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "ls"}}]}
+{"type": "msg", "content": [{"type": "text", "text": "bye"}, {"type": "tool_use", "id": "t2", "name": "Read", "input": {"path": "/tmp"}}]}
+{"type": "msg", "content": [{"type": "thinking", "thinking": "ok", "signature": "sig2"}, {"type": "text", "text": "done"}]}

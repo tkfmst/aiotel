@@ -1,0 +1,5 @@
+{"type": "msg", "message": {"role": "user", "content": "hello"}}
+{"type": "msg", "message": {"role": "user", "content": "world"}}
+{"type": "msg", "message": {"role": "assistant", "content": "hi"}}
+{"type": "event", "data": {"kind": "click", "x": 10, "y": 20}}
+{"type": "event", "data": {"kind": "scroll", "delta": 5}}

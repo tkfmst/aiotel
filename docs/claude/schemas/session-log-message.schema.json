@@ -1,0 +1,1036 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "session-log-message.schema.json",
+  "title": "Claude Code Session Log Message",
+  "description": "Claude Code セッションログ (.jsonl) の1行を表すスキーマ。discriminator は type フィールド。",
+  "oneOf": [
+    { "$ref": "#/$defs/UserMessage" },
+    { "$ref": "#/$defs/AssistantMessage" },
+    { "$ref": "#/$defs/SystemMessage" },
+    { "$ref": "#/$defs/ProgressMessage" },
+    { "$ref": "#/$defs/FileHistorySnapshot" },
+    { "$ref": "#/$defs/PrLink" },
+    { "$ref": "#/$defs/LastPrompt" },
+    { "$ref": "#/$defs/AgentName" },
+    { "$ref": "#/$defs/CustomTitle" },
+    { "$ref": "#/$defs/QueueOperation" }
+  ],
+  "$defs": {
+
+    "UserMessage": {
+      "type": "object",
+      "description": "ユーザーの入力またはツール実行結果",
+      "required": ["type", "uuid", "parentUuid", "isSidechain", "message", "timestamp", "sessionId"],
+      "properties": {
+        "type": { "const": "user" },
+        "uuid": { "$ref": "#/$defs/UUID" },
+        "parentUuid": {
+          "oneOf": [
+            { "$ref": "#/$defs/UUID" },
+            { "type": "null" }
+          ],
+          "description": "親メッセージID。セッション最初のメッセージは null"
+        },
+        "isSidechain": {
+          "type": "boolean",
+          "description": "サイドチェーン（分岐した会話）かどうか"
+        },
+        "message": { "$ref": "#/$defs/UserMessageContent" },
+        "timestamp": { "$ref": "#/$defs/ISO8601" },
+        "sessionId": { "$ref": "#/$defs/UUID" },
+        "promptId": {
+          "$ref": "#/$defs/UUID",
+          "description": "同一ターンのプロンプトを紐づけるID"
+        },
+        "permissionMode": {
+          "type": "string",
+          "enum": ["default", "bypassPermissions", "plan", "acceptEdits", "dontAsk", "auto"],
+          "description": "パーミッションモード。最初のユーザー入力にのみ存在"
+        },
+        "userType": {
+          "type": "string",
+          "description": "ユーザー種別",
+          "examples": ["external"]
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "起動元",
+          "examples": ["cli"]
+        },
+        "cwd": {
+          "type": "string",
+          "description": "作業ディレクトリ"
+        },
+        "version": {
+          "type": "string",
+          "description": "Claude Code のバージョン",
+          "examples": ["2.1.81"]
+        },
+        "gitBranch": {
+          "type": "string",
+          "description": "実行時の git ブランチ"
+        },
+        "slug": {
+          "type": "string",
+          "description": "セッションのスラッグ名"
+        },
+        "sourceToolAssistantUUID": {
+          "$ref": "#/$defs/UUID",
+          "description": "ツール結果の場合、呼び出し元の assistant メッセージ UUID"
+        },
+        "sourceToolUseID": {
+          "type": "string",
+          "description": "ツール結果の場合、呼び出し元のツールUse ID"
+        },
+        "toolUseResult": {
+          "anyOf": [
+            { "type": "string", "description": "テキスト形式のツール結果（MCP等）" },
+            { "$ref": "#/$defs/ToolUseResultBash" },
+            { "$ref": "#/$defs/ToolUseResultGrep" },
+            { "$ref": "#/$defs/ToolUseResultGlob" },
+            { "$ref": "#/$defs/ToolUseResultRead" },
+            { "$ref": "#/$defs/ToolUseResultEdit" },
+            { "$ref": "#/$defs/ToolUseResultWrite" },
+            { "$ref": "#/$defs/ToolUseResultAgent" },
+            { "$ref": "#/$defs/ToolUseResultToolSearch" },
+            { "$ref": "#/$defs/ToolUseResultWebFetch" },
+            { "$ref": "#/$defs/ToolUseResultSkill" },
+            { "$ref": "#/$defs/ToolUseResultGeneric" }
+          ],
+          "description": "ツール実行結果の詳細情報。ツールの種類により構造が異なる。MCP結果等は文字列の場合がある"
+        },
+        "isMeta": {
+          "type": "boolean",
+          "description": "メタ情報のメッセージかどうか"
+        },
+        "mcpMeta": {
+          "type": "object",
+          "description": "MCP サーバーからのメタデータ",
+          "properties": {
+            "structuredContent": {
+              "type": "object",
+              "properties": {
+                "result": { "type": "string" }
+              }
+            }
+          }
+        },
+        "planContent": {
+          "type": "string",
+          "description": "プランモード使用時のプラン内容（Markdown）"
+        },
+        "todos": {
+          "type": "array",
+          "description": "タスクリスト"
+        }
+      }
+    },
+
+    "AssistantMessage": {
+      "type": "object",
+      "description": "Claude の応答メッセージ。ストリーミング中は複数行に分割される",
+      "required": ["type", "uuid", "parentUuid", "isSidechain", "message", "timestamp", "sessionId"],
+      "properties": {
+        "type": { "const": "assistant" },
+        "uuid": { "$ref": "#/$defs/UUID" },
+        "parentUuid": { "$ref": "#/$defs/UUID" },
+        "isSidechain": { "type": "boolean" },
+        "message": { "$ref": "#/$defs/AssistantMessageContent" },
+        "requestId": {
+          "type": ["string", "null"],
+          "description": "Anthropic API のリクエストID。synthetic メッセージでは null"
+        },
+        "timestamp": { "$ref": "#/$defs/ISO8601" },
+        "sessionId": { "$ref": "#/$defs/UUID" },
+        "userType": { "type": "string" },
+        "entrypoint": { "type": "string" },
+        "cwd": { "type": "string" },
+        "version": { "type": "string" },
+        "gitBranch": { "type": "string" },
+        "slug": { "type": "string" }
+      }
+    },
+
+    "SystemMessage": {
+      "type": "object",
+      "description": "システムイベント（hook結果、ターン所要時間、APIエラー、コンテキスト圧縮、ローカルコマンドなど）",
+      "required": ["type", "uuid", "parentUuid", "isSidechain", "subtype", "timestamp", "sessionId"],
+      "properties": {
+        "type": { "const": "system" },
+        "uuid": { "$ref": "#/$defs/UUID" },
+        "parentUuid": {
+          "oneOf": [
+            { "$ref": "#/$defs/UUID" },
+            { "type": "null" }
+          ]
+        },
+        "isSidechain": { "type": "boolean" },
+        "subtype": {
+          "type": "string",
+          "enum": ["stop_hook_summary", "turn_duration", "api_error", "compact_boundary", "local_command"],
+          "description": "システムメッセージのサブタイプ"
+        },
+        "timestamp": { "$ref": "#/$defs/ISO8601" },
+        "sessionId": { "$ref": "#/$defs/UUID" },
+        "durationMs": {
+          "type": "integer",
+          "description": "所要時間（ミリ秒）。subtype=turn_duration の場合に存在"
+        },
+        "isMeta": { "type": "boolean" },
+        "hookCount": {
+          "type": "integer",
+          "description": "実行されたhook数。subtype=stop_hook_summary の場合"
+        },
+        "hookInfos": {
+          "type": "array",
+          "description": "各hookの実行情報",
+          "items": {
+            "type": "object",
+            "properties": {
+              "command": { "type": "string", "description": "実行されたhookコマンド" },
+              "durationMs": { "type": "integer", "description": "hook実行時間（ミリ秒）。callback の場合は省略される" }
+            },
+            "required": ["command"]
+          }
+        },
+        "hookErrors": {
+          "type": "array",
+          "description": "hookのエラー情報"
+        },
+        "preventedContinuation": {
+          "type": "boolean",
+          "description": "hookが会話の継続を阻止したか"
+        },
+        "stopReason": {
+          "type": "string",
+          "description": "停止理由"
+        },
+        "hasOutput": {
+          "type": "boolean",
+          "description": "hookに出力があったか"
+        },
+        "level": {
+          "type": "string",
+          "description": "ログレベル",
+          "examples": ["suggestion", "info", "error"]
+        },
+        "error": {
+          "type": "object",
+          "description": "APIエラー情報。subtype=api_error の場合に存在",
+          "properties": {
+            "status": { "type": "integer", "description": "HTTP ステータスコード" },
+            "headers": { "type": "object" },
+            "requestID": { "type": "string" },
+            "error": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                },
+                "request_id": { "type": "string" }
+              }
+            }
+          }
+        },
+        "retryInMs": {
+          "type": "number",
+          "description": "リトライまでの待機時間（ミリ秒）。subtype=api_error の場合"
+        },
+        "retryAttempt": {
+          "type": "integer",
+          "description": "リトライ回数。subtype=api_error の場合"
+        },
+        "maxRetries": {
+          "type": "integer",
+          "description": "最大リトライ回数。subtype=api_error の場合"
+        },
+        "content": {
+          "type": "string",
+          "description": "メッセージ内容。subtype=compact_boundary, local_command の場合に存在"
+        },
+        "logicalParentUuid": {
+          "$ref": "#/$defs/UUID",
+          "description": "コンテキスト圧縮前の論理的な親UUID。subtype=compact_boundary の場合"
+        },
+        "toolUseID": { "type": "string" },
+        "userType": { "type": "string" },
+        "entrypoint": { "type": "string" },
+        "cwd": { "type": "string" },
+        "version": { "type": "string" },
+        "gitBranch": { "type": "string" },
+        "slug": { "type": "string" }
+      }
+    },
+
+    "ProgressMessage": {
+      "type": "object",
+      "description": "hook/bash/agent/mcp/検索 の実行中進捗情報",
+      "required": ["type", "uuid", "parentUuid", "isSidechain", "data", "timestamp", "sessionId"],
+      "properties": {
+        "type": { "const": "progress" },
+        "uuid": { "$ref": "#/$defs/UUID" },
+        "parentUuid": { "$ref": "#/$defs/UUID" },
+        "isSidechain": { "type": "boolean" },
+        "data": {
+          "oneOf": [
+            { "$ref": "#/$defs/ProgressDataHook" },
+            { "$ref": "#/$defs/ProgressDataBash" },
+            { "$ref": "#/$defs/ProgressDataAgent" },
+            { "$ref": "#/$defs/ProgressDataMcp" },
+            { "$ref": "#/$defs/ProgressDataWaitingForTask" },
+            { "$ref": "#/$defs/ProgressDataQueryUpdate" },
+            { "$ref": "#/$defs/ProgressDataSearchResults" }
+          ]
+        },
+        "parentToolUseID": { "type": "string" },
+        "toolUseID": { "type": "string" },
+        "timestamp": { "$ref": "#/$defs/ISO8601" },
+        "sessionId": { "$ref": "#/$defs/UUID" },
+        "userType": { "type": "string" },
+        "entrypoint": { "type": "string" },
+        "cwd": { "type": "string" },
+        "version": { "type": "string" },
+        "gitBranch": { "type": "string" },
+        "slug": { "type": "string" }
+      }
+    },
+
+    "FileHistorySnapshot": {
+      "type": "object",
+      "description": "ファイル変更履歴のスナップショット（undo/redo 用）",
+      "required": ["type", "messageId", "snapshot", "isSnapshotUpdate"],
+      "properties": {
+        "type": { "const": "file-history-snapshot" },
+        "messageId": { "$ref": "#/$defs/UUID" },
+        "isSnapshotUpdate": {
+          "type": "boolean",
+          "description": "true=既存スナップショットの差分更新、false=新規スナップショット"
+        },
+        "snapshot": {
+          "oneOf": [
+            { "$ref": "#/$defs/SnapshotObject" },
+            {
+              "type": "string",
+              "description": "isSnapshotUpdate=true の場合、JSON文字列としてエンコードされることがある"
+            }
+          ]
+        }
+      }
+    },
+
+    "PrLink": {
+      "type": "object",
+      "description": "セッション中に作成された PR へのリンク",
+      "required": ["type", "sessionId", "prNumber", "prUrl", "prRepository", "timestamp"],
+      "properties": {
+        "type": { "const": "pr-link" },
+        "sessionId": { "$ref": "#/$defs/UUID" },
+        "prNumber": {
+          "type": "integer",
+          "description": "PR 番号"
+        },
+        "prUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "PR の URL"
+        },
+        "prRepository": {
+          "type": "string",
+          "description": "リポジトリ名（owner/repo 形式）",
+          "pattern": "^[^/]+/[^/]+$"
+        },
+        "timestamp": { "$ref": "#/$defs/ISO8601" }
+      }
+    },
+
+    "LastPrompt": {
+      "type": "object",
+      "description": "セッションの最後のユーザープロンプト",
+      "required": ["type", "sessionId", "lastPrompt"],
+      "properties": {
+        "type": { "const": "last-prompt" },
+        "sessionId": { "$ref": "#/$defs/UUID" },
+        "lastPrompt": {
+          "type": "string",
+          "description": "最後に入力されたプロンプトのテキスト"
+        }
+      }
+    },
+
+    "AgentName": {
+      "type": "object",
+      "description": "セッションに割り当てられたエージェント名",
+      "required": ["type", "agentName", "sessionId"],
+      "properties": {
+        "type": { "const": "agent-name" },
+        "agentName": {
+          "type": "string",
+          "description": "エージェント名"
+        },
+        "sessionId": { "$ref": "#/$defs/UUID" }
+      }
+    },
+
+    "CustomTitle": {
+      "type": "object",
+      "description": "セッションのカスタムタイトル",
+      "required": ["type", "customTitle", "sessionId"],
+      "properties": {
+        "type": { "const": "custom-title" },
+        "customTitle": {
+          "type": "string",
+          "description": "カスタムタイトル"
+        },
+        "sessionId": { "$ref": "#/$defs/UUID" }
+      }
+    },
+
+    "QueueOperation": {
+      "type": "object",
+      "description": "キュー操作（enqueue/dequeue）",
+      "required": ["type", "operation", "timestamp", "sessionId"],
+      "properties": {
+        "type": { "const": "queue-operation" },
+        "operation": {
+          "type": "string",
+          "enum": ["enqueue", "dequeue", "remove"],
+          "description": "キュー操作種別"
+        },
+        "content": {
+          "type": "string",
+          "description": "キューに入れられたコンテンツ"
+        },
+        "timestamp": { "$ref": "#/$defs/ISO8601" },
+        "sessionId": { "$ref": "#/$defs/UUID" }
+      }
+    },
+
+    "UserMessageContent": {
+      "type": "object",
+      "required": ["role", "content"],
+      "properties": {
+        "role": { "const": "user" },
+        "content": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "ユーザーが入力したテキスト。直接スラッシュコマンド実行時は <command-message>{skill}</command-message>\\n<command-name>/{skill}</command-name> 形式を含む"
+            },
+            {
+              "type": "array",
+              "description": "ツール実行結果やテキストブロックの配列",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "コンテンツブロック種別",
+                    "examples": ["tool_result", "text"]
+                  },
+                  "tool_use_id": {
+                    "type": "string",
+                    "description": "対応するツール呼び出しの ID（type=tool_result の場合）"
+                  },
+                  "text": {
+                    "type": "string",
+                    "description": "テキスト内容（type=text の場合）"
+                  },
+                  "content": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "テキスト形式の結果"
+                      },
+                      {
+                        "type": "array",
+                        "description": "構造化された結果の配列",
+                        "items": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "description": "ツール参照（ToolSearch の結果）",
+                              "properties": {
+                                "type": { "const": "tool_reference" },
+                                "tool_name": { "type": "string" }
+                              },
+                              "required": ["type", "tool_name"]
+                            },
+                            {
+                              "type": "object",
+                              "description": "テキストブロック",
+                              "properties": {
+                                "type": { "const": "text" },
+                                "text": { "type": "string" }
+                              },
+                              "required": ["type", "text"]
+                            },
+                            {
+                              "type": "object",
+                              "description": "画像ブロック",
+                              "properties": {
+                                "type": { "const": "image" }
+                              },
+                              "required": ["type"]
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "description": "ツール実行結果の内容（文字列またはオブジェクト配列）"
+                  },
+                  "is_error": {
+                    "type": "boolean",
+                    "description": "エラーが発生したかどうか"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+
+    "AssistantMessageContent": {
+      "type": "object",
+      "required": ["id", "type", "role", "content", "usage"],
+      "properties": {
+        "model": {
+          "type": ["string", "null"],
+          "description": "使用モデル名。synthetic メッセージでは '<synthetic>'、ストリーミング途中では null の場合がある",
+          "examples": ["claude-opus-4-6", "claude-sonnet-4-6", "<synthetic>"]
+        },
+        "id": {
+          "type": "string",
+          "description": "Anthropic API のメッセージ ID。synthetic メッセージでは UUID 形式"
+        },
+        "type": { "const": "message" },
+        "role": { "const": "assistant" },
+        "content": {
+          "type": "array",
+          "description": "応答コンテンツ配列",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/ContentThinking" },
+              { "$ref": "#/$defs/ContentToolUse" },
+              { "$ref": "#/$defs/ContentText" }
+            ]
+          }
+        },
+        "stop_reason": {
+          "type": ["string", "null"],
+          "enum": ["end_turn", "tool_use", null],
+          "description": "停止理由。null=ストリーミング中"
+        },
+        "stop_sequence": {
+          "type": ["string", "null"]
+        },
+        "usage": { "$ref": "#/$defs/Usage" }
+      }
+    },
+
+    "ContentThinking": {
+      "type": "object",
+      "description": "Claude の内部思考プロセス",
+      "required": ["type", "thinking"],
+      "properties": {
+        "type": { "const": "thinking" },
+        "thinking": {
+          "type": "string",
+          "description": "思考プロセスのテキスト"
+        },
+        "signature": {
+          "type": "string",
+          "description": "thinking の署名（改ざん検知用）"
+        }
+      }
+    },
+
+    "ContentToolUse": {
+      "type": "object",
+      "description": "ツール呼び出し",
+      "required": ["type", "id", "name", "input"],
+      "properties": {
+        "type": { "const": "tool_use" },
+        "id": {
+          "type": "string",
+          "description": "ツール呼び出し ID",
+          "pattern": "^toolu_"
+        },
+        "name": {
+          "type": "string",
+          "description": "ツール名",
+          "examples": [
+            "Bash", "Read", "Edit", "Write", "Grep", "Glob",
+            "Agent", "ToolSearch", "WebFetch", "WebSearch",
+            "Skill", "TaskCreate", "TaskUpdate"
+          ]
+        },
+        "input": {
+          "type": "object",
+          "description": "ツールへの入力パラメータ（ツールごとに異なる）"
+        },
+        "caller": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "呼び出し元種別",
+              "examples": ["direct"]
+            }
+          }
+        }
+      }
+    },
+
+    "ContentText": {
+      "type": "object",
+      "description": "ユーザーに表示されるテキスト応答",
+      "required": ["type", "text"],
+      "properties": {
+        "type": { "const": "text" },
+        "text": {
+          "type": "string",
+          "description": "表示テキスト"
+        }
+      }
+    },
+
+    "Usage": {
+      "type": "object",
+      "description": "APIトークン使用量",
+      "properties": {
+        "input_tokens": {
+          "type": "integer",
+          "description": "入力トークン数"
+        },
+        "output_tokens": {
+          "type": "integer",
+          "description": "出力トークン数"
+        },
+        "cache_creation_input_tokens": {
+          "type": "integer",
+          "description": "キャッシュ作成に使用された入力トークン数"
+        },
+        "cache_read_input_tokens": {
+          "type": "integer",
+          "description": "キャッシュから読み取った入力トークン数"
+        },
+        "service_tier": {
+          "type": "string",
+          "description": "サービスティア",
+          "examples": ["standard"]
+        },
+        "inference_geo": {
+          "type": ["string", "null"],
+          "description": "推論の地理的リージョン"
+        },
+        "speed": {
+          "type": ["string", "null"],
+          "description": "速度モード",
+          "examples": ["standard", null]
+        },
+        "cache_creation": {
+          "type": "object",
+          "description": "エフェメラルキャッシュ作成の詳細",
+          "properties": {
+            "ephemeral_5m_input_tokens": {
+              "type": "integer",
+              "description": "5分間の短期キャッシュ作成トークン数"
+            },
+            "ephemeral_1h_input_tokens": {
+              "type": "integer",
+              "description": "1時間の中期キャッシュ作成トークン数"
+            }
+          }
+        },
+        "server_tool_use": {
+          "type": "object",
+          "description": "サーバーサイドツール使用状況",
+          "properties": {
+            "web_search_requests": {
+              "type": "integer",
+              "description": "Web 検索リクエスト数"
+            },
+            "web_fetch_requests": {
+              "type": "integer",
+              "description": "Web フェッチリクエスト数"
+            }
+          }
+        },
+        "iterations": {
+          "type": "array",
+          "description": "イテレーション情報"
+        }
+      }
+    },
+
+    "ProgressDataHook": {
+      "type": "object",
+      "description": "Hook 実行進捗",
+      "required": ["type", "hookEvent", "hookName", "command"],
+      "properties": {
+        "type": { "const": "hook_progress" },
+        "hookEvent": {
+          "type": "string",
+          "description": "hook イベント種別",
+          "examples": ["Stop", "PostToolUse"]
+        },
+        "hookName": {
+          "type": "string",
+          "description": "hook 名",
+          "examples": ["Stop", "PostToolUse:Read", "PostToolUse:Edit"]
+        },
+        "command": {
+          "type": "string",
+          "description": "実行コマンド"
+        }
+      }
+    },
+
+    "ProgressDataBash": {
+      "type": "object",
+      "description": "Bash コマンド実行進捗",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "bash_progress" },
+        "taskId": {
+          "type": "string",
+          "description": "Bash タスク ID"
+        },
+        "output": {
+          "type": "string",
+          "description": "直近の出力"
+        },
+        "fullOutput": {
+          "type": "string",
+          "description": "全出力"
+        },
+        "totalLines": {
+          "type": "integer",
+          "description": "出力行数"
+        },
+        "totalBytes": {
+          "type": "integer",
+          "description": "出力バイト数"
+        },
+        "elapsedTimeSeconds": {
+          "type": "integer",
+          "description": "経過時間（秒）"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "description": "タイムアウト設定（ミリ秒）"
+        }
+      }
+    },
+
+    "ProgressDataAgent": {
+      "type": "object",
+      "description": "サブエージェント実行進捗",
+      "required": ["type", "agentId"],
+      "properties": {
+        "type": { "const": "agent_progress" },
+        "agentId": {
+          "type": "string",
+          "description": "エージェント ID"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "エージェントに渡されたプロンプト"
+        },
+        "message": {
+          "type": "object",
+          "description": "エージェントの最新メッセージ"
+        },
+        "normalizedMessages": {
+          "type": "array",
+          "description": "正規化されたメッセージ"
+        }
+      }
+    },
+
+    "ProgressDataMcp": {
+      "type": "object",
+      "description": "MCP サーバー呼び出し進捗",
+      "required": ["type", "serverName", "toolName", "status"],
+      "properties": {
+        "type": { "const": "mcp_progress" },
+        "serverName": {
+          "type": "string",
+          "description": "MCP サーバー名",
+          "examples": ["plugin:serena:serena"]
+        },
+        "toolName": {
+          "type": "string",
+          "description": "呼び出されたツール名"
+        },
+        "status": {
+          "type": "string",
+          "description": "実行ステータス",
+          "examples": ["started"]
+        },
+        "elapsedTimeMs": {
+          "type": "integer",
+          "description": "経過時間（ミリ秒）"
+        }
+      }
+    },
+
+    "ProgressDataWaitingForTask": {
+      "type": "object",
+      "description": "タスク待機中の進捗（サブエージェントのタスク待ち）",
+      "required": ["type", "taskDescription", "taskType"],
+      "properties": {
+        "type": { "const": "waiting_for_task" },
+        "taskDescription": {
+          "type": "string",
+          "description": "待機中のタスクの説明"
+        },
+        "taskType": {
+          "type": "string",
+          "description": "タスク種別",
+          "examples": ["local_agent"]
+        }
+      }
+    },
+
+    "ProgressDataQueryUpdate": {
+      "type": "object",
+      "description": "Web検索クエリ更新",
+      "required": ["type", "query"],
+      "properties": {
+        "type": { "const": "query_update" },
+        "query": {
+          "type": "string",
+          "description": "検索クエリ文字列"
+        }
+      }
+    },
+
+    "ProgressDataSearchResults": {
+      "type": "object",
+      "description": "Web検索結果受信",
+      "required": ["type", "resultCount", "query"],
+      "properties": {
+        "type": { "const": "search_results_received" },
+        "resultCount": {
+          "type": "integer",
+          "description": "検索結果数"
+        },
+        "query": {
+          "type": "string",
+          "description": "検索クエリ文字列"
+        }
+      }
+    },
+
+    "ToolUseResultBash": {
+      "type": "object",
+      "description": "Bash コマンド実行結果",
+      "required": ["stdout", "stderr", "interrupted"],
+      "properties": {
+        "stdout": { "type": "string", "description": "標準出力" },
+        "stderr": { "type": "string", "description": "標準エラー出力" },
+        "interrupted": { "type": "boolean", "description": "中断されたかどうか" },
+        "isImage": { "type": "boolean", "description": "出力が画像かどうか" },
+        "noOutputExpected": { "type": "boolean", "description": "出力が期待されないコマンドか" },
+        "returnCodeInterpretation": { "type": "string", "description": "リターンコードの解釈" }
+      }
+    },
+
+    "ToolUseResultGrep": {
+      "type": "object",
+      "description": "Grep 検索結果",
+      "required": ["filenames", "mode", "numFiles"],
+      "properties": {
+        "filenames": { "type": "array", "items": { "type": "string" }, "description": "マッチしたファイル名" },
+        "mode": { "type": "string", "description": "出力モード" },
+        "numFiles": { "type": "integer", "description": "マッチしたファイル数" },
+        "numLines": { "type": "integer", "description": "マッチした行数" },
+        "content": { "type": "string", "description": "マッチした内容" },
+        "appliedLimit": { "type": "integer", "description": "適用された行数制限" },
+        "appliedOffset": { "type": "integer", "description": "適用されたオフセット" }
+      }
+    },
+
+    "ToolUseResultGlob": {
+      "type": "object",
+      "description": "Glob ファイル検索結果",
+      "required": ["filenames", "numFiles"],
+      "properties": {
+        "filenames": { "type": "array", "items": { "type": "string" }, "description": "マッチしたファイル名" },
+        "numFiles": { "type": "integer", "description": "マッチしたファイル数" },
+        "durationMs": { "type": "integer", "description": "検索所要時間（ミリ秒）" },
+        "truncated": { "type": "boolean", "description": "結果が切り詰められたか" }
+      }
+    },
+
+    "ToolUseResultRead": {
+      "type": "object",
+      "description": "ファイル読み取り結果",
+      "required": ["content", "filenames", "mode", "numFiles"],
+      "properties": {
+        "content": { "type": "string", "description": "ファイル内容" },
+        "filenames": { "type": "array", "items": { "type": "string" } },
+        "mode": { "type": "string" },
+        "numFiles": { "type": "integer" },
+        "numLines": { "type": "integer", "description": "読み取った行数" },
+        "appliedLimit": { "type": "integer", "description": "適用された行数制限" },
+        "appliedOffset": { "type": "integer", "description": "適用されたオフセット" }
+      }
+    },
+
+    "ToolUseResultEdit": {
+      "type": "object",
+      "description": "ファイル編集結果",
+      "required": ["filePath", "oldString", "newString"],
+      "properties": {
+        "filePath": { "type": "string", "description": "編集対象ファイルパス" },
+        "oldString": { "type": "string", "description": "置換前の文字列" },
+        "newString": { "type": "string", "description": "置換後の文字列" },
+        "originalFile": { "type": "string", "description": "編集前のファイル全体" },
+        "replaceAll": { "type": "boolean", "description": "全置換かどうか" },
+        "structuredPatch": { "type": "string", "description": "構造化パッチ" },
+        "userModified": { "type": "boolean", "description": "ユーザーが手動修正したか" }
+      }
+    },
+
+    "ToolUseResultWrite": {
+      "type": "object",
+      "description": "ファイル書き込み結果",
+      "required": ["type", "filePath"],
+      "properties": {
+        "type": { "type": "string" },
+        "filePath": { "type": "string", "description": "書き込み先ファイルパス" },
+        "content": { "type": "string", "description": "書き込まれた内容" },
+        "originalFile": { "type": "string", "description": "書き込み前のファイル内容" },
+        "structuredPatch": { "type": "string", "description": "構造化パッチ" }
+      }
+    },
+
+    "ToolUseResultAgent": {
+      "type": "object",
+      "description": "サブエージェント実行結果",
+      "required": ["status", "agentId", "content"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "実行ステータス",
+          "examples": ["completed"]
+        },
+        "prompt": { "type": "string", "description": "エージェントに渡されたプロンプト" },
+        "agentId": { "type": "string", "description": "エージェント ID" },
+        "content": {
+          "type": "array",
+          "description": "エージェントの最終出力",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "text": { "type": "string" }
+            }
+          }
+        },
+        "totalDurationMs": { "type": "integer", "description": "総実行時間（ミリ秒）" },
+        "totalTokens": { "type": "integer", "description": "総トークン数" },
+        "totalToolUseCount": { "type": "integer", "description": "総ツール使用回数" },
+        "usage": { "$ref": "#/$defs/Usage" }
+      }
+    },
+
+    "ToolUseResultToolSearch": {
+      "type": "object",
+      "description": "ToolSearch 結果",
+      "required": ["matches", "query", "total_deferred_tools"],
+      "properties": {
+        "matches": { "type": "array", "items": { "type": "string" }, "description": "マッチしたツール名" },
+        "query": { "type": "string", "description": "検索クエリ" },
+        "total_deferred_tools": { "type": "integer", "description": "遅延ツールの総数" }
+      }
+    },
+
+    "ToolUseResultWebFetch": {
+      "type": "object",
+      "description": "WebFetch 結果",
+      "required": ["url", "code", "result"],
+      "properties": {
+        "url": { "type": "string", "format": "uri", "description": "フェッチ先 URL" },
+        "code": { "type": "integer", "description": "HTTP ステータスコード" },
+        "codeText": { "type": "string", "description": "ステータスコードのテキスト" },
+        "result": { "type": "string", "description": "取得内容" },
+        "bytes": { "type": "integer", "description": "レスポンスサイズ（バイト）" },
+        "durationMs": { "type": "integer", "description": "フェッチ所要時間（ミリ秒）" }
+      }
+    },
+
+    "ToolUseResultSkill": {
+      "type": "object",
+      "description": "Skill 実行結果",
+      "required": ["commandName", "success"],
+      "properties": {
+        "commandName": { "type": "string", "description": "実行されたスキル名" },
+        "success": { "type": "boolean", "description": "実行成功かどうか" }
+      }
+    },
+
+    "ToolUseResultGeneric": {
+      "type": "object",
+      "description": "その他のツール実行結果（message のみのケースなど）",
+      "properties": {
+        "message": { "type": "string" },
+        "answers": { "type": "array" },
+        "questions": { "type": "array" }
+      }
+    },
+
+    "SnapshotObject": {
+      "type": "object",
+      "description": "ファイル変更スナップショット",
+      "required": ["messageId", "trackedFileBackups", "timestamp"],
+      "properties": {
+        "messageId": { "$ref": "#/$defs/UUID" },
+        "trackedFileBackups": {
+          "type": "object",
+          "description": "追跡中のファイルバックアップ情報。キーはファイルパス",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "backupFileName": {
+                "type": ["string", "null"],
+                "description": "バックアップファイル名。初回バックアップ前は null"
+              },
+              "version": {
+                "type": "integer",
+                "description": "ファイルバージョン"
+              },
+              "backupTime": {
+                "$ref": "#/$defs/ISO8601",
+                "description": "バックアップ日時"
+              }
+            },
+            "required": ["backupFileName", "version", "backupTime"]
+          }
+        },
+        "timestamp": { "$ref": "#/$defs/ISO8601" }
+      }
+    },
+
+    "UUID": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "UUID v4"
+    },
+
+    "ISO8601": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 日時文字列",
+      "examples": ["2026-03-28T09:02:07.229Z"]
+    }
+  }
+}

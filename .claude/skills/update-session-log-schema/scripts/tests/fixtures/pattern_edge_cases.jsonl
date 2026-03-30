@@ -1,0 +1,9 @@
+{"type": "a", "uuid": "550e8400-e29b-41d4-a716-446655440000", "ts": "2026-03-28T09:02:07.229Z", "url": "https://github.com/example"}
+{"type": "a", "uuid": "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "ts": "2026-03-28T10:00:00.000Z", "url": "https://example.com/path"}
+{"type": "a", "uuid": "f47ac10b-58cc-4372-a567-0e02b2c3d479", "ts": "2026-01-01T00:00:00.000Z", "url": "https://api.example.com/v1"}
+{"type": "a", "uuid": "bash-progress-0", "ts": "2026-03-28T11:00:00.000Z", "url": "https://x.com"}
+{"type": "a", "uuid": "task-output-waiting-123", "ts": "2026-03-28T12:00:00.000Z", "url": "https://y.com"}
+{"type": "b", "backup": null, "name": "file-a@v1"}
+{"type": "b", "backup": "48d0ac6b89c5e15d@v2", "name": "file-b@v3"}
+{"type": "b", "backup": "48d0ac6b89c5e15d@v3", "name": "file-c@v1"}
+{"type": "b", "backup": null, "name": "file-d@v1"}
