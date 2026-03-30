@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sessions-index.schema.json",
+  "title": "Claude Code Sessions Index",
+  "description": "sessions-index.json のスキーマ。プロジェクト内の全セッションの一覧と要約情報を保持する。",
+  "type": "object",
+  "required": ["version", "entries"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "インデックスフォーマットのバージョン",
+      "const": 1
+    },
+    "entries": {
+      "type": "array",
+      "description": "セッションエントリの配列",
+      "items": { "$ref": "#/$defs/SessionEntry" }
+    }
+  },
+  "$defs": {
+    "SessionEntry": {
+      "type": "object",
+      "description": "1セッションの要約情報",
+      "required": [
+        "sessionId",
+        "fullPath",
+        "fileMtime",
+        "firstPrompt",
+        "summary",
+        "messageCount",
+        "created",
+        "modified",
+        "gitBranch",
+        "projectPath",
+        "isSidechain"
+      ],
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "セッションの一意 ID (UUID v4)"
+        },
+        "fullPath": {
+          "type": "string",
+          "description": "セッションログファイル (.jsonl) の絶対パス"
+        },
+        "fileMtime": {
+          "type": "integer",
+          "description": "ファイルの最終更新時刻（Unix timestamp ミリ秒）"
+        },
+        "firstPrompt": {
+          "type": "string",
+          "description": "セッションの最初のユーザー入力テキスト"
+        },
+        "summary": {
+          "type": "string",
+          "description": "セッションの要約（自動生成）"
+        },
+        "messageCount": {
+          "type": "integer",
+          "description": "セッション内のメッセージ総数",
+          "minimum": 0
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "セッション作成日時 (ISO 8601)"
+        },
+        "modified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "セッション最終更新日時 (ISO 8601)"
+        },
+        "gitBranch": {
+          "type": "string",
+          "description": "セッション開始時の git ブランチ名"
+        },
+        "projectPath": {
+          "type": "string",
+          "description": "プロジェクトのディレクトリパス"
+        },
+        "isSidechain": {
+          "type": "boolean",
+          "description": "サイドチェーン（分岐した会話）かどうか"
+        }
+      }
+    }
+  }
+}

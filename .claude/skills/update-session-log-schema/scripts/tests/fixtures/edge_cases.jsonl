@@ -1,0 +1,8 @@
+{"type": "a", "val": null}
+{"type": "a", "val": "hello"}
+{"type": "a", "val": "world"}
+{"type": "b", "items": []}
+{"type": "b", "items": [1, 2, 3]}
+{"type": "c", "mixed": "string_value"}
+{"type": "c", "mixed": {"nested": true}}
+{"type": "d"}
